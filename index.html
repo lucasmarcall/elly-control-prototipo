@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Elly">
+<meta name="theme-color" content="#d4c5fb">
+<title>Elly Control 1.1 · Protótipo</title>
+<style>
+:root{--ink:#2b2550;--muted:#6d6795;--violet:#7c5cf0;--blue:#4fb8e8;--glass:rgba(255,255,255,.28);--edge:rgba(255,255,255,.6)}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Roboto,sans-serif;color:var(--ink);overflow:hidden;background:linear-gradient(165deg,#d4c5fb 0%,#ddd5f8 42%,#c3e9f6 100%) fixed}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+svg{display:block}
+.glass{background:var(--glass);border:1px solid var(--edge);backdrop-filter:blur(18px) saturate(1.3);-webkit-backdrop-filter:blur(18px) saturate(1.3);box-shadow:0 10px 32px rgba(90,70,170,.14)}
+
+/* topo */
+header{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(env(safe-area-inset-top) + 12px) 18px 10px;z-index:20}
+.brand b{display:block;font-size:15px;letter-spacing:.14em}
+.brand small{font-size:11px;letter-spacing:.06em;color:var(--muted)}
+.wrap{position:relative}
+#menuBtn{width:46px;height:46px;border-radius:16px;display:grid;place-items:center}
+#menu{display:none;position:absolute;top:56px;right:0;width:230px;border-radius:18px;padding:8px;flex-direction:column;gap:2px}
+#menu.open{display:flex}
+#menu button{text-align:left;padding:12px 14px;border-radius:12px;font-size:15px}
+#menu button:active,#menu button.sel{background:rgba(124,92,240,.14)}
+
+/* área principal */
+main{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 72px) 16px calc(env(safe-area-inset-bottom) + 88px)}
+.stage{position:relative;width:min(44vw,210px);aspect-ratio:1;flex:none;display:grid;place-items:center;margin-top:4px}
+.aura{position:absolute;inset:-22%;border-radius:50%;background:radial-gradient(circle,rgba(124,92,240,.75) 0%,rgba(79,184,232,.45) 45%,transparent 70%);filter:blur(16px);opacity:.42;transition:opacity .5s}
+.stage[data-state=listening] .aura{background:radial-gradient(circle,rgba(79,184,232,.9) 0%,rgba(124,92,240,.35) 50%,transparent 70%);opacity:.9;animation:pulse 1.2s ease-in-out infinite alternate}
+.stage[data-state=thinking] .aura{opacity:.6;animation:pulse 2.4s linear infinite alternate}
+.stage[data-state=speaking] .aura{opacity:1;animation:pulse .5s ease-in-out infinite alternate}
+.orb{position:relative;width:100%;height:100%;border-radius:50%;background:radial-gradient(circle at 30% 25%,#f1e8ff 0%,#a68cf6 28%,#7c5cf0 55%,#4fa8e0 82%,#3f7fd0 100%);box-shadow:inset -14px -18px 36px rgba(40,30,120,.35),0 14px 40px rgba(124,92,240,.35);animation:float 4s ease-in-out infinite;--ew:22px;--eh:22px;--erot:0deg;--mw:30px;--mh:6px;--mr:0 0 30px 30px}
+.eye{position:absolute;top:38%;width:var(--ew);height:var(--eh);background:#fff;border-radius:50%;transform:rotate(var(--erot));transition:width .3s,height .3s,transform .3s;animation:blink 5s infinite}
+.eye.l{left:30%}
+.eye.r{right:30%;transform:rotate(calc(var(--erot) * -1))}
+.mouth{position:absolute;left:50%;top:60%;width:var(--mw);height:var(--mh);transform:translateX(-50%);background:#fff;border-radius:var(--mr);transition:width .3s,height .3s,border-radius .3s}
+.orb.talking .mouth{animation:talk .2s ease-in-out infinite alternate}
+
+/* expressões */
+.orb.feliz{--ew:18px;--eh:12px;--mw:44px;--mh:22px;--mr:0 0 50% 50%}
+.orb.triste{--eh:14px;--erot:14deg;--mw:30px;--mh:8px;--mr:50% 50% 0 0}
+.orb.curiosa{--erot:-10deg;--eh:26px;--mw:14px;--mh:14px;--mr:50%}
+.orb.surpresa{--ew:20px;--eh:30px;--mw:18px;--mh:24px;--mr:50%}
+.orb.sono{--eh:4px;--mw:26px;--mh:4px;--mr:4px}
+
+.status{margin-top:8px;font-size:13px;font-weight:500;color:var(--violet);text-align:center}
+.chat{flex:1;min-height:0;width:min(640px,100%);overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:12px 4px;margin-top:6px;-webkit-mask-image:linear-gradient(transparent,#000 16px);mask-image:linear-gradient(transparent,#000 16px)}
+.msg{max-width:82%;padding:12px 15px;border-radius:20px;font-size:15px;line-height:1.4;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.55);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);white-space:pre-wrap}
+.msg.user{align-self:flex-end;border-bottom-right-radius:6px}
+.msg.elly{align-self:flex-start;border-bottom-left-radius:6px;background:rgba(124,92,240,.12)}
+.painel{flex:1;min-height:0;width:min(640px,100%);overflow-y:auto;margin-top:12px;border-radius:24px;padding:18px}
+.painel h3{font-size:16px;margin-bottom:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 2px;border-bottom:1px solid rgba(255,255,255,.5);font-size:15px}
+.btn{display:inline-block;padding:12px 16px;border-radius:14px;margin:4px 6px 4px 0;font-size:15px}
+
+/* barra de entrada */
+footer{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom) + 12px);width:min(640px,calc(100% - 24px));display:flex;align-items:center;gap:8px;padding:8px;border-radius:26px;z-index:15}
+footer input{flex:1;min-width:0;background:transparent;border:0;outline:none;font:inherit;font-size:16px;color:var(--ink);padding:10px 6px}
+footer input::placeholder{color:var(--muted)}
+.round{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;flex:none}
+#mic.on{background:rgba(79,184,232,.35)}
+#send{background:linear-gradient(135deg,#a58bf8,#7fd0f2);color:#fff}
+
+@keyframes float{50%{transform:translateY(-8px)}}
+@keyframes blink{0%,92%,100%{scale:1 1}94%{scale:1 .1}}
+@keyframes pulse{from{transform:scale(.92)}to{transform:scale(1.12)}}
+@keyframes talk{from{height:4px}to{height:20px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><b>✦ ELLY CONTROL 1.1</b><small>LUCAS MARÇAL BEAUTY · GLORA</small></div>
+  <div class="wrap">
+    <button id="menuBtn" class="glass" aria-label="Funções">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
+    <nav id="menu" class="glass">
+      <button data-v="conversa">Conversa</button>
+      <button data-v="visao">Visão geral</button>
+      <button data-v="expressoes">Expressões</button>
+      <button data-v="testes">Testes</button>
+      <button data-v="imagem">Imagem</button>
+      <button data-v="arquivos">Arquivos</button>
+      <button data-v="microfone">Microfone</button>
+      <button data-v="ajustes">Ajustes</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="stage" id="stage" data-state="idle">
+    <div class="aura"></div>
+    <div class="orb" id="orb">
+      <div class="eye l"></div><div class="eye r"></div><div class="mouth"></div>
+    </div>
+  </div>
+  <p class="status" id="status">Pronta para conversar</p>
+  <section class="chat" id="chat"></section>
+  <section class="painel glass" id="painel" hidden></section>
+</main>
+
+<footer class="glass">
+  <button class="round glass" id="plus" aria-label="Anexar">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+  <input id="input" placeholder="Pergunte algo à Elly…" autocomplete="off">
+  <button class="round glass" id="mic" aria-label="Microfone">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+  </button>
+  <button class="round" id="send" aria-label="Enviar">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+  </button>
+</footer>
+<input type="file" id="file" multiple hidden>
+
+<script>
+const $ = id => document.getElementById(id);
+const stage = $('stage'), orb = $('orb'), statusEl = $('status'), chat = $('chat'), painel = $('painel');
+const input = $('input'), menu = $('menu'), micBtn = $('mic'), fileIn = $('file');
+const synth = window.speechSynthesis;
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const API_URL = ''; // Cole aqui a URL do Worker, ex.: https://elly-api.SEU-USUARIO.workers.dev
+const historico = [];
+const cfg = { vel: 1, fala: true };
+const EXPS = ['feliz', 'triste', 'curiosa', 'surpresa', 'sono'];
+const TXT = { idle: 'Pronta para conversar', listening: 'Ouvindo…', thinking: 'Pensando…', speaking: 'Falando…' };
+let voices = [], view = 'conversa';
+
+const carregarVozes = () => { voices = synth ? synth.getVoices() : []; };
+if (synth) { carregarVozes(); synth.onvoiceschanged = carregarVozes; }
+
+function setState(s) {
+  stage.dataset.state = s;
+  statusEl.textContent = TXT[s];
+  orb.classList.toggle('talking', s === 'speaking');
+}
+function expressao(n) {
+  EXPS.forEach(c => orb.classList.remove(c));
+  if (EXPS.includes(n)) orb.classList.add(n);
+}
+function addMsg(t, who) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + who;
+  d.textContent = t;
+  chat.appendChild(d);
+  chat.scrollTop = chat.scrollHeight;
+}
+function vozPT() {
+  return voices.find(v => /pt[-_]BR/i.test(v.lang) && /Luciana|Francisca|Google/i.test(v.name))
+      || voices.find(v => /pt[-_]BR/i.test(v.lang))
+      || voices.find(v => /^pt/i.test(v.lang)) || null;
+}
+// iOS exige um gesto do usuário para liberar a fala
+function desbloquear() { if (synth) synth.speak(new SpeechSynthesisUtterance('')); }
+
+function falar(t) {
+  if (!synth || !cfg.fala) { setState('idle'); return; }
+  synth.cancel();
+  const u = new SpeechSynthesisUtterance(t);
+  const v = vozPT(); if (v) u.voice = v;
+  u.lang = 'pt-BR'; u.rate = cfg.vel; u.pitch = 1.08;
+  u.onstart = () => setState('speaking');
+  u.onend = u.onerror = () => setState('idle');
+  synth.speak(u);
+}
+
+function ouvir() {
+  if (!SR) { addMsg('Microfone indisponível neste navegador. Tente Safari ou Chrome.', 'elly'); return; }
+  const r = new SR();
+  r.lang = 'pt-BR'; r.interimResults = true;
+  r.onstart = () => { setState('listening'); micBtn.classList.add('on'); };
+  r.onresult = e => {
+    const t = [...e.results].map(x => x[0].transcript).join(' ');
+    input.value = t;
+    if (e.results[e.results.length - 1].isFinal) { micBtn.classList.remove('on'); enviar(t); }
+  };
+  r.onend = () => { micBtn.classList.remove('on'); if (stage.dataset.state === 'listening') setState('idle'); };
+  r.onerror = () => { micBtn.classList.remove('on'); setState('idle'); };
+  r.start();
+}
+
+// Respostas de demonstração (usadas enquanto API_URL estiver vazio)
+function respostaDemo(t) {
+  const s = t.toLowerCase();
+  const e = EXPS.find(x => s.includes(x));
+  if (e) { expressao(e); return 'Estou com expressão ' + e + '.'; }
+  if (/agenda|agendamento|financ|cadastro|glora/.test(s))
+    return 'A leitura do Glora ainda não está conectada neste protótipo. Ela será ativada somente após auditoria e autorização.';
+  return 'Recebi sua mensagem. A IA generativa ainda não está conectada a este protótipo.';
+}
+
+// Fala com a IA pelo Worker; sem API_URL, usa a demonstração local.
+async function responder(t) {
+  if (!API_URL) {
+    await new Promise(r => setTimeout(r, 450));
+    return { texto: respostaDemo(t) };
+  }
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensagens: historico.concat({ role: 'user', content: t }).slice(-12) })
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const dados = await res.json();
+    historico.push({ role: 'user', content: t }, { role: 'assistant', content: dados.texto });
+    return dados;
+  } catch (err) {
+    return { texto: 'Não consegui falar com a IA agora. Verifique a conexão e tente de novo.' };
+  }
+}
+
+function enviar(t) {
+  t = (t ?? input.value).trim();
+  if (!t) return;
+  input.value = '';
+  desbloquear();
+  if (view !== 'conversa') mostrar('conversa');
+  addMsg(t, 'user');
+  setState('thinking');
+  responder(t).then(({ texto, expr }) => { if (expr) expressao(expr); addMsg(texto, 'elly'); falar(texto); });
+}
+
+async function testarExpressoes() {
+  for (const x of EXPS) { expressao(x); await new Promise(r => setTimeout(r, 900)); }
+  expressao('neutra');
+}
+
+const PAINEIS = {
+  visao: () => '<h3>Status do sistema</h3>' + [
+    ['Voz de saída', synth ? 'Disponível' : 'Indisponível'],
+    ['Reconhecimento de voz', SR ? 'Disponível' : 'Indisponível'],
+    ['IA generativa', 'Não conectada'],
+    ['Planilha Glora', 'Aguardando auditoria (somente leitura)']
+  ].map(([a, b]) => `<div class="row"><span>${a}</span><b>${b}</b></div>`).join(''),
+  testes: () => '<h3>Testes</h3>' +
+    '<button class="btn glass" data-act="voz">Testar voz</button>' +
+    '<button class="btn glass" data-act="mic">Testar microfone</button>' +
+    '<button class="btn glass" data-act="exp">Testar expressões</button>',
+  expressoes: () => '<h3>Expressões</h3>' +
+    EXPS.map(x => `<button class="btn glass" data-exp="${x}">${x}</button>`).join('') +
+    '<button class="btn glass" data-exp="neutra">neutra</button>',
+  ajustes: () => '<h3>Ajustes</h3>' +
+    `<div class="row"><span>Velocidade da voz</span><input id="vel" type="range" min=".7" max="1.3" step=".05" value="${cfg.vel}"></div>` +
+    `<div class="row"><span>Falar respostas</span><input id="fala" type="checkbox" ${cfg.fala ? 'checked' : ''}></div>`
+};
+
+function mostrar(v) {
+  view = v;
+  const conversa = v === 'conversa';
+  chat.hidden = !conversa;
+  painel.hidden = conversa;
+  if (!conversa) painel.innerHTML = PAINEIS[v]();
+  menu.classList.remove('open');
+  menu.querySelectorAll('button').forEach(b => b.classList.toggle('sel', b.dataset.v === v));
+}
+
+function anexar(accept) { fileIn.accept = accept; fileIn.click(); }
+
+const ACOES = {
+  conversa: () => mostrar('conversa'),
+  visao: () => mostrar('visao'),
+  expressoes: () => mostrar('expressoes'),
+  testes: () => mostrar('testes'),
+  ajustes: () => mostrar('ajustes'),
+  imagem: () => anexar('image/*'),
+  arquivos: () => anexar('*/*'),
+  microfone: () => { mostrar('conversa'); ouvir(); }
+};
+
+// eventos
+$('menuBtn').addEventListener('click', e => { e.stopPropagation(); menu.classList.toggle('open'); });
+document.addEventListener('click', () => menu.classList.remove('open'));
+menu.addEventListener('click', e => { const b = e.target.closest('button'); if (b) ACOES[b.dataset.v](); });
+
+$('send').onclick = () => enviar();
+input.addEventListener('keydown', e => { if (e.key === 'Enter') enviar(); });
+micBtn.onclick = () => ouvir();
+$('plus').onclick = () => anexar('*/*');
+
+fileIn.onchange = () => {
+  const arquivos = [...fileIn.files];
+  arquivos.forEach(f => addMsg('📎 ' + f.name, 'user'));
+  if (arquivos.length) addMsg('Arquivo recebido. A leitura de arquivos será ativada numa próxima etapa.', 'elly');
+  fileIn.value = '';
+};
+
+painel.addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.exp) expressao(b.dataset.exp);
+  if (b.dataset.act === 'voz') { desbloquear(); falar('Olá, eu sou a Elly. Esta é a minha voz de teste.'); }
+  if (b.dataset.act === 'mic') ouvir();
+  if (b.dataset.act === 'exp') testarExpressoes();
+});
+painel.addEventListener('input', e => { if (e.target.id === 'vel') cfg.vel = +e.target.value; });
+painel.addEventListener('change', e => { if (e.target.id === 'fala') cfg.fala = e.target.checked; });
+
+// início
+expressao('neutra');
+addMsg('Olá! Sou a Elly Control 1.1. Esta é uma prévia visual com dados de exemplo. Experimente dizer “feliz”, “triste” ou “curiosa”.', 'elly');
+</script>
+</body>
+</html>
